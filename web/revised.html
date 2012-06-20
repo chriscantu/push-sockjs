@@ -1,0 +1,96 @@
+<html>
+    <head>
+        <title>Revised</title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script type="text/javascript" src="sockjs-0.3.1.min.js"></script>
+        <script type="text/javascript" src="vertxbus.js" ></script>
+        <script type="text/javascript" src="jquery.url.js" ></script>
+    </head>
+    
+    <body id="revised">
+        <h2 id="status_info"></h2>
+        <form onsubmit="return false;">
+            <label>Topic:</label>
+            <input type="text" name="topic" value="" id="topic">
+            <p><input id="subscribeButton" type="submit" value="Subscribe"></p>
+        </form>        
+        <hr />
+        <h2>Current Topic</h2>
+        <div id="topics">
+            
+        </div>
+        <hr />
+        <form onsubmit="return false;">
+            <label for="message">Message:</label>
+            <input type="text" name="message" value="" id="message">
+            <p><input id="sendButton" type="submit" value="Send"></p>
+        </form>
+        
+        <hr />
+        <h2>Messages</h2>
+        <div id="messages">
+        </div>
+        <script>
+            var eb = null;
+            
+            function send(address,  message) {
+                if (eb) {
+                    var json = { text: message };
+                    eb.send( address, json );
+                }
+            };
+            
+            function openConn() {
+                if (!eb) {
+                    eb = new vertx.EventBus("http://localhost:8080/eventbus");
+
+                    eb.onopen = function() {
+                        console.log("Connected");
+                        $("#status_info").text("Status: Connected");
+                    };
+
+                    eb.onclose = function() {
+                        console.log("Not Connected");
+                        $("#status_info").text("Status: Not connected");
+                        eb = null;
+                    };
+                }
+            };
+
+            function subscribe(topic) {
+                if (eb) {
+                    eb.registerHandler( topic, function(msg, replyTo) {
+                        $('#messages').append("<p>Message: " + msg.text + "</p> <br>");
+                    });
+                }
+            };
+
+            function closeConn() {
+                if (eb) {
+                    eb.close();
+                }
+            };
+
+            $(document).ready(function() {
+                openConn();
+                $("#sendButton").click(function() {
+                    send($("#topic").val(), $("#message").val());
+                });
+
+                $("#subscribeButton").click(function() {
+                    var myTopic = $("#topic").val();
+                    $("#topics").append("<p> " + myTopic +"</p>");
+                    subscribe( myTopic );
+                });
+
+                $("#closeButton").click(function() {
+                    closeConn();
+                });
+
+                $("#connectButton").click(function() {
+                    openConn();
+                });
+            });
+        </script>
+    </body>
+</html>
